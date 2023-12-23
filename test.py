@@ -6,7 +6,7 @@ from torchvision import transforms
 
 # Load the trained model
 model = ResNetMultiLabelClassifier(num_classes=80)
-model.load_state_dict(torch.load('resnet_Focal_model.pth'))
+model.load_state_dict(torch.load('resnet_ML_model.pth'))
 model.eval()
 
 # Specify the device
