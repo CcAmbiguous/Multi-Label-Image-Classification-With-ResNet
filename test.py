@@ -7,10 +7,11 @@ from torchvision import transforms
 # Load the trained model
 model = ResNetMultiLabelClassifier(num_classes=80)
 model.load_state_dict(torch.load('resnet_ML_model.pth'))
-model.eval()
 
 # Specify the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)  
+model.eval()
 
 # Example of data transformations
 transform = transforms.Compose([
@@ -25,11 +26,12 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 # Testing loop
 correct_predictions = 0
 total_samples = 0
-
+current_idx = 0  # 用于记录当前批次在数据集中的起始索引
 
 with torch.no_grad():
     for inputs, labels in test_loader:
         inputs = inputs.to(device)
+        labels = labels.to(device)  # 将标签也移到同一设备
         outputs = model(inputs)
 
         # Convert outputs to binary predictions (0 or 1)
@@ -37,22 +39,22 @@ with torch.no_grad():
 
         # Print the results
         for i in range(len(predictions)):
-            print(
-                f"Image: {test_dataset.data.iloc[i, 0]}, Predictions: {predictions[i].cpu().numpy()}, Ground Truth: {labels[i].cpu().numpy()}")
+            idx = current_idx + i
+            if idx < len(test_dataset.data):  # 确保不越界
+                print(f"Image: {test_dataset.data.iloc[idx, 0]}, Predictions: {predictions[i].cpu().numpy()}, Ground Truth: {labels[i].cpu().numpy()}")
+
+        # 更新索引
+        current_idx += len(predictions)
 
         # Handle mismatched dimensions
         if predictions.shape[1] != labels.shape[1]:
-            # Resize predictions to match the number of classes
             predictions = predictions[:, :labels.shape[1]]
 
-        # Update counts
-        correct_predictions += torch.sum(predictions == labels[:, :predictions.shape[1]]).item()
+        # 计算正确预测的数量（逐元素比较）
+        correct_predictions += torch.sum(predictions == labels).item()
         total_samples += labels.numel()
 
-
-
-# Calculate accuracy
-accuracy = correct_predictions / total_samples
+# Calculate accuracy（注意：多标签分类中这个指标可能不理想）
+accuracy = correct_predictions / total_samples if total_samples > 0 else 0
 
 print(f"Accuracy: {accuracy * 100:.2f}%")
-
