@@ -10,5 +10,5 @@ python - train.py
 ```
 You can test the model at the terminal using the following command
 ```python  
-python - train.py
+python - test.py
 ```
